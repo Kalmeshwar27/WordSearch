@@ -21,7 +21,7 @@
   }
 
   body {
-    
+    overscroll-behavior: none;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     background-color: var(--bg-color);
     color: var(--font-color);
@@ -152,6 +152,10 @@
   .controls button:active {
     transform: scale(0.98);
   }
+  .grid {
+  touch-action: none; /* ✅ Prevents touch scrolling */
+}
+
   @media (max-width: 768px) {
   .grid {
     grid-template-columns: repeat(12, 7vw);
@@ -312,52 +316,15 @@
           cell.dataset.row = row;
           cell.dataset.col = col;
 
-          cell.addEventListener("mousedown", (e) => {
-            isMouseDown = true;
-            resetSelection();
-            startCell = cell;
-            cell.classList.add("selected");
-            selectedCells = [cell];
-          });
+          cell.addEventListener("mousedown", handleStart);
+          cell.addEventListener("touchstart", handleStart, { passive: false });
 
-          cell.addEventListener("mouseenter", (e) => {
-            if (!isMouseDown || !startCell || cell.classList.contains("found")) return;
-            const startRow = parseInt(startCell.dataset.row);
-            const startCol = parseInt(startCell.dataset.col);
-            const currentRow = parseInt(cell.dataset.row);
-            const currentCol = parseInt(cell.dataset.col);
-            const dx = currentRow - startRow;
-            const dy = currentCol - startCol;
+          // Drag selection
+          cell.addEventListener("mouseenter", handleMove);
+          cell.addEventListener("touchmove", handleMove, { passive: false });
 
-            // Normalize direction
-            const length = Math.max(Math.abs(dx), Math.abs(dy));
-            if (length === 0) return;
-            const normDx = dx / length;
-            const normDy = dy / length;
-            if (!Number.isInteger(normDx) || !Number.isInteger(normDy)) return;
-
-            const path = [];
-for (let i = 0; i <= length; i++) {
-  const row = startRow + normDx * i;
-  const col = startCol + normDy * i;
-  const cellInPath = cells.find(c => parseInt(c.dataset.row) === row && parseInt(c.dataset.col) === col);
-  if (!cellInPath) return;
-
-  const expectedLetter = grid[row][col];
-  if (cellInPath.classList.contains("found") && cellInPath.textContent !== expectedLetter) return;
-
-  path.push(cellInPath);
-}
-
-            resetSelection();
-            selectedCells = path;
-            selectedCells.forEach(c => c.classList.add("selected"));
-          });
-
-          cell.addEventListener("mouseup", (e) => {
-            isMouseDown = false;
-            checkWord();
-          });
+          cell.addEventListener("mouseup", handleEnd);
+          cell.addEventListener("touchend", handleEnd);
 
           gridElement.appendChild(cell);
           cells.push(cell);
@@ -368,6 +335,61 @@ for (let i = 0; i <= length; i++) {
         isMouseDown = false;
       });
     }
+function handleStart(e) {
+  e.preventDefault();
+  isMouseDown = true;
+  resetSelection();
+
+  const cell = e.target;
+  startCell = cell;
+  cell.classList.add("selected");
+  selectedCells = [cell];
+}
+
+function handleMove(e) {
+  if (!isMouseDown || !startCell) return;
+
+  const touch = e.touches ? e.touches[0] : null;
+  const target = touch
+    ? document.elementFromPoint(touch.clientX, touch.clientY)
+    : e.target;
+
+  if (!target || !target.classList.contains("cell") || target.classList.contains("found")) return;
+
+  const startRow = parseInt(startCell.dataset.row);
+  const startCol = parseInt(startCell.dataset.col);
+  const currentRow = parseInt(target.dataset.row);
+  const currentCol = parseInt(target.dataset.col);
+
+  const dx = currentRow - startRow;
+  const dy = currentCol - startCol;
+
+  const length = Math.max(Math.abs(dx), Math.abs(dy));
+  if (length === 0) return;
+  const normDx = dx / length;
+  const normDy = dy / length;
+  if (!Number.isInteger(normDx) || !Number.isInteger(normDy)) return;
+
+  const path = [];
+  for (let i = 0; i <= length; i++) {
+    const row = startRow + normDx * i;
+    const col = startCol + normDy * i;
+    const cellInPath = cells.find(
+      c => parseInt(c.dataset.row) === row && parseInt(c.dataset.col) === col
+    );
+    if (!cellInPath || cellInPath.classList.contains("found")) return;
+    path.push(cellInPath);
+  }
+
+  resetSelection();
+  selectedCells = path;
+  selectedCells.forEach(c => c.classList.add("selected"));
+}
+
+function handleEnd(e) {
+  isMouseDown = false;
+  checkWord();
+}
 
     function populateWordList() {
       wordListElement.innerHTML = "";
