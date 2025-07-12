@@ -203,24 +203,25 @@
   </div>
 
   <script>
-    const wordColors = {
-  downer: "#4caf50",
-  downfall: "#f44336",
-  download: "#2196f3",
-  downsize: "#9c27b0",
-  downstream: "#ff9800",
-  downtown: "#00bcd4",
-  downwind: "#e91e63",
-  upbeat: "#3f51b5",
-  upbraid: "#009688",
-  update: "#795548",
-  upgrade: "#ff5722",
-  upkeep: "#673ab7",
-  uplift: "#607d8b",
-  upright: "#8bc34a",
-  uproar: "#cddc39",
-  upset: "#ffc107"
-};
+   const wordColors = {};
+const colorPalette = [
+  "#4caf50", "#f44336", "#2196f3", "#9c27b0", "#ff9800",
+  "#00bcd4", "#e91e63", "#3f51b5", "#009688", "#795548",
+  "#ff5722", "#673ab7", "#607d8b", "#8bc34a", "#cddc39", "#ffc107",
+  "#00acc1", "#8e24aa", "#c62828", "#1e88e5"
+];
+
+function assignColors(words) {
+  let colorIndex = 0;
+  words.forEach(word => {
+    const key = word.toLowerCase();
+    if (!wordColors[key]) {
+      wordColors[key] = colorPalette[colorIndex % colorPalette.length];
+      colorIndex++;
+    }
+  });
+}
+
 
     let seed = new Date().toDateString().split("").reduce((a, c) => a + c.charCodeAt(0), 0);
   function seededRandom() {
@@ -533,6 +534,7 @@ function canReveal(word, row, col, dx, dy) {
 
 
     // Start game
+    assignColors(words);
     createEmptyGrid();
     words.forEach(w => placeWord(w.toUpperCase()));
     fillGridRandomly();
