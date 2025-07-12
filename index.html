@@ -266,15 +266,21 @@
       ];
     }
 
-    function canPlace(word, row, col, dx, dy) {
-      for (let i = 0; i < word.length; i++) {
-        const x = row + dx * i;
-        const y = col + dy * i;
-        if (x < 0 || y < 0 || x >= gridSize || y >= gridSize) return false;
-        if (grid[x][y] !== "" && grid[x][y] !== word[i]) return false;
-      }
-      return true;
-    }
+  function canPlace(word, row, col, dx, dy) {
+  for (let i = 0; i < word.length; i++) {
+    const x = row + dx * i;
+    const y = col + dy * i;
+    if (x < 0 || y < 0 || x >= gridSize || y >= gridSize) return false;
+
+    const cellChar = grid[x][y];
+    const wordChar = word[i]; // Already uppercase from .toUpperCase()
+
+    if (cellChar !== "" && cellChar !== wordChar) return false; // ✅ Allow overlap only if same letter
+  }
+  return true;
+}
+
+
 
     function placeWord(word) {
   const dir = directions().sort(() => seededRandom() - 0.5);
@@ -292,7 +298,7 @@
       for (let i = 0; i < word.length; i++) {
         const x = row + dx * i;
         const y = col + dy * i;
-        grid[x][y] = word[i];
+        grid[x][y] = word[i].toUpperCase();
       }
       placed = true;
     }
@@ -377,7 +383,7 @@ function handleMove(e) {
     const cellInPath = cells.find(
       c => parseInt(c.dataset.row) === row && parseInt(c.dataset.col) === col
     );
-    if (!cellInPath || cellInPath.classList.contains("found")) return;
+    if (!cellInPath) return;
     path.push(cellInPath);
   }
 
