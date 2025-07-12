@@ -152,6 +152,39 @@
   .controls button:active {
     transform: scale(0.98);
   }
+  @media (max-width: 768px) {
+  .grid {
+    grid-template-columns: repeat(12, 7vw);
+    grid-template-rows: repeat(12, 7vw);
+  }
+
+  .cell {
+    width: 7vw;
+    height: 7vw;
+    font-size: 4vw;
+  }
+
+  .word-list {
+    font-size: 4vw;
+    padding: 10px;
+  }
+
+  .controls button {
+    font-size: 4vw;
+    padding: 8px 12px;
+  }
+
+  h1 {
+    font-size: 6vw;
+    text-align: center;
+  }
+
+  .container {
+    flex-direction: column;
+    align-items: center;
+  }
+}
+
 </style>
 
 </head>
