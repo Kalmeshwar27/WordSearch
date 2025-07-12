@@ -88,7 +88,6 @@
 
   .cell.found {
   font-weight: bold;
-  pointer-events: none;
 }
 
 
@@ -360,7 +359,7 @@ function handleMove(e) {
     ? document.elementFromPoint(touch.clientX, touch.clientY)
     : e.target;
 
-  if (!target || !target.classList.contains("cell") || target.classList.contains("found")) return;
+  if (!target || !target.classList.contains("cell")) return;
 
   const startRow = parseInt(startCell.dataset.row);
   const startCol = parseInt(startCell.dataset.col);
@@ -372,25 +371,37 @@ function handleMove(e) {
 
   const length = Math.max(Math.abs(dx), Math.abs(dy));
   if (length === 0) return;
+
   const normDx = dx / length;
   const normDy = dy / length;
+
   if (!Number.isInteger(normDx) || !Number.isInteger(normDy)) return;
 
   const path = [];
+
   for (let i = 0; i <= length; i++) {
     const row = startRow + normDx * i;
     const col = startCol + normDy * i;
+
     const cellInPath = cells.find(
       c => parseInt(c.dataset.row) === row && parseInt(c.dataset.col) === col
     );
+
     if (!cellInPath) return;
+
     path.push(cellInPath);
   }
 
-  resetSelection();
+  // ✅ Reset previous selection and apply new one (even if it includes `.found` cells)
+  selectedCells.forEach(c => c.classList.remove("selected"));
   selectedCells = path;
-  selectedCells.forEach(c => c.classList.add("selected"));
+  selectedCells.forEach(c => {
+    if (!c.classList.contains("found")) {
+      c.classList.add("selected");
+    }
+  });
 }
+
 
 function handleEnd(e) {
   isMouseDown = false;
@@ -407,17 +418,17 @@ function handleEnd(e) {
       });
     }
 
-  function resetSelection() {
-  // Only revert if the current selection hasn't been matched yet
-  if (selectedCells.length > 0 && !selectedCells[0].classList.contains("found")) {
-    selectedCells.forEach(cell => cell.classList.remove("selected"));
-    selectedCells = [];
-  }
+ function resetSelection() {
+  selectedCells.forEach(cell => {
+    if (!cell.classList.contains("found")) {
+      cell.classList.remove("selected");
+    }
+  });
+  selectedCells = [];
 }
 
 
-
-    function checkWord() {
+  function checkWord() {
   const selectedWord = selectedCells.map(c => c.textContent).join("");
   const reversed = selectedWord.split("").reverse().join("");
   const match = words.find(word =>
@@ -426,17 +437,25 @@ function handleEnd(e) {
   );
 
   if (match) {
-    // Mark the selected cells as found
     const color = wordColors[match.toLowerCase()] || "#4caf50";
-selectedCells.forEach(c => {
-  c.classList.remove("selected");
-  c.classList.add("found");
-  c.style.backgroundColor = color;
-  c.style.color = "white";
-});
 
+    selectedCells.forEach(c => {
+      c.classList.remove("selected");
+      c.classList.add("found");
 
-    // Strike through the word in the list
+      // ✅ Store overlapping words using data attribute
+      const existing = c.dataset.words ? c.dataset.words.split(",") : [];
+      if (!existing.includes(match)) {
+        existing.push(match);
+        c.dataset.words = existing.join(",");
+      }
+
+      // ✅ Set color (you could make this fancier if you want)
+      c.style.backgroundColor = color;
+      c.style.color = "white";
+    });
+
+    // ✅ Strike through the word in the list
     document.getElementById(match.toLowerCase()).classList.add("found");
 
     // ✅ Play success sound
@@ -447,15 +466,14 @@ selectedCells.forEach(c => {
       });
     }
 
-    // ✅ Trigger confetti if all words are found
+    // ✅ Check for completion
     const allFound = words.every(word =>
       document.getElementById(word.toLowerCase()).classList.contains("found")
     );
-    if (allFound) {
-      confetti(); // <- You need to load a confetti library for this to work
-    }
+    if (allFound) confetti();
+
   } else {
-    // Revert selection after short delay
+    // Revert if not matched
     setTimeout(() => resetSelection(), 300);
   }
 }
