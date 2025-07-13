@@ -282,33 +282,98 @@ function assignColors(words) {
 
 
 
-    function placeWord(word) {
-  const dir = directions().sort(() => seededRandom() - 0.5);
+   function placeWord(word) {
+  const allDirections = directions();
+  const options = [];
 
-  let placed = false;
-  let attempts = 0;
-  while (!placed && attempts < 2000) {
-    attempts++;
-    const dxdy = dir[Math.floor(seededRandom() * dir.length)];
-    const dx = dxdy[0];
-    const dy = dxdy[1];
-    const row = Math.floor(seededRandom() * gridSize);
-    const col = Math.floor(seededRandom() * gridSize);
-    if (canPlace(word, row, col, dx, dy)) {
-      for (let i = 0; i < word.length; i++) {
-        const x = row + dx * i;
-        const y = col + dy * i;
-        grid[x][y] = word[i].toUpperCase();
+  // First pass: overlap-aware smart placement
+  for (let row = 0; row < gridSize; row++) {
+    for (let col = 0; col < gridSize; col++) {
+      for (const [dx, dy] of allDirections) {
+        if (canPlace(word, row, col, dx, dy)) {
+          let overlap = 0;
+          for (let i = 0; i < word.length; i++) {
+            const x = row + dx * i;
+            const y = col + dy * i;
+            if (grid[x][y] === word[i]) overlap++;
+          }
+          options.push({ row, col, dx, dy, overlap });
+        }
       }
-      placed = true;
     }
   }
-  if (!placed) {
-    console.warn(`Could not place word: ${word}`);
-    const li = document.getElementById(word.toLowerCase());
-    if (li) li.style.color = "red"; // or mark it differently
+
+  // Sort to place words with the most overlap first
+  options.sort((a, b) => b.overlap - a.overlap);
+
+  // Place using best option
+  if (options.length > 0) {
+    const { row, col, dx, dy } = options[0];
+    for (let i = 0; i < word.length; i++) {
+      const x = row + dx * i;
+      const y = col + dy * i;
+      grid[x][y] = word[i];
+    }
+    return;
+  }
+
+  // Absolute fallback: try every direction and every cell (no randomness)
+  for (let row = 0; row < gridSize; row++) {
+    for (let col = 0; col < gridSize; col++) {
+      for (const [dx, dy] of allDirections) {
+        if (canPlace(word, row, col, dx, dy)) {
+          for (let i = 0; i < word.length; i++) {
+            const x = row + dx * i;
+            const y = col + dy * i;
+            grid[x][y] = word[i];
+          }
+          return;
+        }
+      }
+    }
+  }
+
+  // Still not placed? Extremely rare. Log clearly.
+  console.warn(`🚨 Could not place word: ${word}`);
+  const li = document.getElementById(word.toLowerCase());
+  if (li) li.style.color = "red";
+}
+
+function placeAllWords() {
+  createEmptyGrid();
+
+  // 🔥 Sort words by length (descending)
+  const sortedWords = [...words].sort((a, b) => b.length - a.length);
+
+  let allPlaced = false;
+  let retries = 0;
+
+  while (!allPlaced && retries < 5) {
+    retries++;
+    createEmptyGrid();
+    allPlaced = true;
+
+    for (const word of sortedWords) {
+      const prevGrid = JSON.stringify(grid); // backup
+      placeWord(word.toUpperCase());
+
+      // Check if placed successfully
+      const found = grid.flat().join("").includes(word[0].toUpperCase());
+      if (!found) {
+        allPlaced = false;
+        break;
+      }
+    }
+  }
+
+  if (!allPlaced) {
+    alert("❌ Could not place all words after retries.");
   }
 }
+
+
+
+  // Sort: prioritize highest overlap first for efficient use of space
 
 
     function buildGridUI() {
@@ -536,7 +601,9 @@ function canReveal(word, row, col, dx, dy) {
     // Start game
     assignColors(words);
     createEmptyGrid();
-    words.forEach(w => placeWord(w.toUpperCase()));
+    placeAllWords();
+
+
     fillGridRandomly();
     buildGridUI();
     populateWordList();
