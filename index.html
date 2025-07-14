@@ -260,11 +260,14 @@ function assignColors(words) {
     }
 
     function directions() {
-      return [
-        [0, 1], [1, 0], [1, 1], [-1, 1],
-        [0, -1], [-1, 0], [-1, -1], [1, -1]
-      ];
-    }
+  return [
+    [0, 1],   // → left to right
+    [1, 0],   // ↓ top to bottom
+    [1, 1],   // ↘ diagonal from top-left to bottom-right
+    [1, -1]   // ↙ diagonal from top-right to bottom-left
+  ];
+}
+
 
   function canPlace(word, row, col, dx, dy) {
   for (let i = 0; i < word.length; i++) {
@@ -528,9 +531,9 @@ function handleEnd(e) {
   const selectedWord = selectedCells.map(c => c.textContent).join("");
   const reversed = selectedWord.split("").reverse().join("");
   const match = words.find(word =>
-    word.toLowerCase() === selectedWord.toLowerCase() ||
-    word.toLowerCase() === reversed.toLowerCase()
-  );
+  word.toLowerCase() === selectedWord.toLowerCase()
+);
+
 
   if (match) {
     const color = wordColors[match.toLowerCase()] || "#4caf50";
