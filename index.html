@@ -198,8 +198,8 @@ h1 {
   </div>
 
   <script>
-   const wordColors = {};
-const colorPalette = [
+  const wordColors = {};
+  const colorPalette = [
   "#4caf50", "#f44336", "#2196f3", "#9c27b0", "#ff9800",
   "#00bcd4", "#e91e63", "#3f51b5", "#009688", "#795548",
   "#ff5722", "#673ab7", "#607d8b", "#8bc34a", "#cddc39", "#ffc107",
@@ -651,6 +651,10 @@ fetch("config.json")
   const words = config.words;
   gridRows = config.rows;
   gridCols = config.cols;
+  const gridStyle = document.querySelector(".grid").style;
+  gridStyle.gridTemplateColumns = `repeat(${gridCols}, 1fr)`;
+  gridStyle.gridTemplateRows = `repeat(${gridRows}, 1fr)`;
+
   startGame(words);
 })
 
