@@ -9,182 +9,179 @@
 
 <style>
   :root {
-    --primary-color: #4caf50;
-    --secondary-color: #f8d7da;
-    --bg-color: #f4f4f4;
-    --font-color: #333;
-    --grid-border: #ccc;
-  }
+  --primary-color: #4caf50;
+  --secondary-color: #f8d7da;
+  --bg-color: #f4f4f4;
+  --font-color: #333;
+  --grid-border: #ccc;
+}
 
-  * {
-    box-sizing: border-box;
-  }
+* {
+  box-sizing: border-box;
+}
 
-  body {
-    overscroll-behavior: none;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background-color: var(--bg-color);
-    color: var(--font-color);
-    margin: 0;
-    padding: 40px 20px;
-    display: flex;
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: var(--bg-color);
+  color: var(--font-color);
+  margin: 0;
+  padding: 20px 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 100vh;
+  overscroll-behavior: none;
+}
+
+h1 {
+  font-size: clamp(1.8rem, 5vw, 2.5rem);
+  margin-bottom: 20px;
+  color: #c0392b;
+  text-align: center;
+}
+
+.container {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 20px;
+  width: 100%;
+  max-width: 900px;
+}
+
+.grid {
+  display: grid;
+  gap: 1px;
+  padding: 8px;
+  border: 2px solid var(--grid-border);
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  touch-action: none;
+  width: 95vw;
+  max-width: 500px;
+  aspect-ratio: 1 / 1;
+  grid-template-columns: repeat(12, 1fr);
+  grid-template-rows: repeat(12, 1fr);
+}
+
+.cell {
+  background-color: #fff;
+  border-radius: 4px;
+  border: 1px solid #ddd;
+  font-size: clamp(10px, 2.8vw, 18px);
+  font-weight: bold;
+  color: #333;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+  user-select: none;
+  aspect-ratio: 1 / 1;
+}
+
+.cell:hover {
+  background-color: #e0f7fa;
+  transform: scale(1.05);
+}
+
+.cell.selected {
+  background-color: #ffeb3b;
+}
+
+.cell.found {
+  font-weight: bold;
+}
+
+.word-list {
+  background: var(--secondary-color);
+  padding: 12px;
+  border-radius: 10px;
+  max-height: 400px;
+  overflow-y: auto;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  font-size: clamp(12px, 4vw, 16px);
+  width: 90vw;
+  max-width: 200px;
+}
+
+.word-list h3 {
+  margin: 0 0 10px 0;
+  text-align: center;
+  color: #c0392b;
+}
+
+.word-list li {
+  list-style: none;
+  padding: 6px;
+  transition: all 0.2s ease-in-out;
+}
+
+.word-list li:hover {
+  background-color: #fceaea;
+  border-radius: 4px;
+}
+
+.word-list li.found {
+  text-decoration: line-through;
+  color: gray;
+  font-style: italic;
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+.controls button {
+  padding: 10px 20px;
+  font-size: clamp(14px, 4vw, 18px);
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.2s ease-in-out, transform 0.1s ease-in-out;
+}
+
+.controls button:hover {
+  background-color: #45a049;
+  transform: translateY(-2px);
+}
+
+.controls button:active {
+  transform: scale(0.98);
+}
+
+/* Mobile Optimizations */
+@media (max-width: 600px) {
+  .container {
     flex-direction: column;
     align-items: center;
   }
 
-  h1 {
-    font-size: 2.5rem;
-    margin-bottom: 30px;
-    color: var(--primary-color);
-    text-shadow: 1px 1px 0 #ccc;
-    color: #c0392b;
-  }
-
-  .container {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 30px;
-    margin-bottom: 30px;
-  }
-
-  .grid {
-    display: grid;
-    gap: 3px;
-    padding: 10px;
-    border: 2px solid var(--grid-border);
-    background: white;
-    border-radius: 10px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  }
-
-  .cell {
-    width: 40px;
-    height: 40px;
-    background-color: #fff;
-    border-radius: 6px;
-    border: 1px solid #ddd;
-    font-size: 18px;
-    font-weight: bold;
-    color: #333;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    cursor: pointer;
-    transition: background-color 0.2s ease, transform 0.1s ease;
-    user-select: none;
-  }
-
-  .cell:hover {
-    background-color: #e0f7fa;
-    transform: scale(1.05);
-  }
-
-  .cell.selected {
-    background-color: #ffeb3b;
-  }
-
-  .cell.found {
-  font-weight: bold;
-}
-
-
   .word-list {
-    background: var(--secondary-color);
-    padding: 20px;
-    border-radius: 10px;
-    min-width: 200px;
-    max-height: 480px;
-    overflow-y: auto;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  }
-
-  .word-list h3 {
-    margin: 0 0 10px 0;
-    text-align: center;
-    color: #c0392b;
-  }
-
-  .word-list li {
-    list-style: none;
-    padding: 6px;
-    font-size: 16px;
-    transition: all 0.2s ease-in-out;
-  }
-
-  .word-list li:hover {
-    background-color: #fceaea;
-    border-radius: 4px;
-  }
-
-  .word-list li.found {
-    text-decoration: line-through;
-    color: gray;
-    font-style: italic;
-  }
-
-  .controls {
-    display: flex;
-    gap: 15px;
-    justify-content: center;
-    margin-top: 20px;
-  }
-
-  .controls button {
-    padding: 10px 20px;
-    font-size: 16px;
-    background-color: var(--primary-color);
-    color: white;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: background-color 0.2s ease-in-out, transform 0.1s ease-in-out;
-  }
-
-  .controls button:hover {
-    background-color: #45a049;
-    transform: translateY(-2px);
-  }
-
-  .controls button:active {
-    transform: scale(0.98);
-  }
-  .grid {
-  touch-action: none; /* ✅ Prevents touch scrolling */
-}
-
-  @media (max-width: 768px) {
-  .grid {
-    grid-template-columns: repeat(12, 7vw);
-    grid-template-rows: repeat(12, 7vw);
-  }
-
-  .cell {
-    width: 7vw;
-    height: 7vw;
-    font-size: 4vw;
-  }
-
-  .word-list {
-    font-size: 4vw;
-    padding: 10px;
+    width: 95vw;
+    max-height: 250px;
   }
 
   .controls button {
     font-size: 4vw;
-    padding: 8px 12px;
+    padding: 6px 10px;
   }
 
   h1 {
     font-size: 6vw;
-    text-align: center;
-  }
-
-  .container {
-    flex-direction: column;
-    align-items: center;
   }
 }
+
+
+
 
 </style>
 
@@ -410,8 +407,7 @@ function tryPlaceWords(wordList, index) {
   cells = [];
 
   // 🔧 Set dynamic grid dimensions
-  gridElement.style.gridTemplateColumns = `repeat(${gridCols}, 40px)`;
-  gridElement.style.gridTemplateRows = `repeat(${gridRows}, 40px)`;
+
 
   for (let row = 0; row < gridRows; row++) {
     for (let col = 0; col < gridCols; col++) {
