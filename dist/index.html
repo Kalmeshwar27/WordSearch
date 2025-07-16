@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Word Search Superheroes</title>
+ <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+
+
+<style>
+  :root {
+  --primary-color: #4caf50;
+  --secondary-color: #f8d7da;
+  --bg-color: #f4f4f4;
+  --font-color: #333;
+  --grid-border: #ccc;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: var(--bg-color);
+  color: var(--font-color);
+  margin: 0;
+  padding: 20px 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 100vh;
+  overscroll-behavior: none;
+}
+
+h1 {
+  font-size: clamp(1.8rem, 5vw, 2.5rem);
+  margin-bottom: 20px;
+  color: #c0392b;
+  text-align: center;
+}
+
+.container {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 20px;
+  width: 100%;
+  max-width: 900px;
+}
+
+.grid {
+  display: grid;
+  gap: 1px;
+  padding: 8px;
+  border: 2px solid var(--grid-border);
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  touch-action: none;
+  width: 95vw;
+  max-width: 500px;
+  aspect-ratio: 1 / 1;
+  grid-template-columns: repeat(12, 1fr);
+  grid-template-rows: repeat(12, 1fr);
+}
+
+.cell {
+  background-color: #fff;
+  border-radius: 4px;
+  border: 1px solid #ddd;
+  font-size: clamp(10px, 2.8vw, 18px);
+  font-weight: bold;
+  color: #333;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+  user-select: none;
+  aspect-ratio: 1 / 1;
+}
+
+.cell:hover {
+  background-color: #e0f7fa;
+  transform: scale(1.05);
+}
+
+.cell.selected {
+  background-color: #ffeb3b;
+}
+
+.cell.found {
+  font-weight: bold;
+}
+
+.word-list {
+  background: var(--secondary-color);
+  padding: 12px;
+  border-radius: 10px;
+  max-height: 400px;
+  overflow-y: auto;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  font-size: clamp(12px, 4vw, 16px);
+  width: 90vw;
+  max-width: 200px;
+}
+
+.word-list h3 {
+  margin: 0 0 10px 0;
+  text-align: center;
+  color: #c0392b;
+}
+
+.word-list li {
+  list-style: none;
+  padding: 6px;
+  transition: all 0.2s ease-in-out;
+}
+
+.word-list li:hover {
+  background-color: #fceaea;
+  border-radius: 4px;
+}
+
+.word-list li.found {
+  text-decoration: line-through;
+  color: gray;
+  font-style: italic;
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+.controls button {
+  padding: 10px 20px;
+  font-size: clamp(14px, 4vw, 18px);
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.2s ease-in-out, transform 0.1s ease-in-out;
+}
+
+.controls button:hover {
+  background-color: #45a049;
+  transform: translateY(-2px);
+}
+
+.controls button:active {
+  transform: scale(0.98);
+}
+
+/* Mobile Optimizations */
+@media (max-width: 600px) {
+  .container {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .word-list {
+    width: 95vw;
+    max-height: 250px;
+  }
+
+  .controls button {
+    font-size: 4vw;
+    padding: 6px 10px;
+  }
+
+  h1 {
+    font-size: 6vw;
+  }
+}
+</style>
+
+</head>
+<body>
+  <h1>Word Search Superheroes</h1>
+  <div class="container">
+  <div class="grid" id="grid"></div>
+  <ul class="word-list" id="wordList"></ul>
+  </div>
+  <div class="controls">
+  <!-- <button onclick="resetSelection()">Revert</button> -->
+  <button onclick="revealWord()">Reveal Word</button>
+  </div>
+
+  <script>
+  const wordColors = {};
+  let seed = new Date().toDateString().split("").reduce((a, c) => a + c.charCodeAt(0), 0);
+  function seededRandom() {
+  const x = Math.sin(seed++) * 10000;
+  return x - Math.floor(x);
+  }
+    let words = [];
+    let gridRows = 12;
+    let gridCols = 12;
+    const gridElement = document.getElementById("grid");
+    const wordListElement = document.getElementById("wordList");
+    let grid = [];
+    let cells = [];
+    let selectedCells = [];
+    let isMouseDown = false;
+    let startCell = null;
+    let currentDirection = null;
+
+  function createEmptyGrid() {
+  grid = Array.from({ length: gridRows }, () => Array(gridCols).fill(""));
+}
+function assignColors(words) {
+  const usedColors = new Set();
+  words.forEach(word => {
+    const key = word.toLowerCase();
+    if (!wordColors[key]) {
+      let color;
+      let attempts = 0;
+      do {
+        const hue = Math.floor(seededRandom() * 360);  // hue: 0 to 359
+        const sat = 60 + Math.floor(seededRandom() * 30);  // saturation: 60–90%
+        const light = 50 + Math.floor(seededRandom() * 20); // lightness: 50–70%
+        color = `hsl(${hue}, ${sat}%, ${light}%)`;
+        attempts++;
+      } while (usedColors.has(color) && attempts < 10);
+      usedColors.add(color);
+      wordColors[key] = color;
+    }
+  });
+}
+    function fillGridRandomly() {
+      const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+      for (let row = 0; row < gridRows; row++) {
+      for (let col = 0; col < gridCols; col++) {
+          if (grid[row][col] === "") {
+            grid[row][col] = letters[Math.floor(seededRandom() * letters.length)];
+          }
+        }
+      }
+    }
+
+  function directions() {
+  return [
+  [0, 1],   // → left to right
+  [1, 0],   // ↓ top to bottom
+  [1, 1],   // ↘ diagonal from top-left to bottom-right
+  [1, -1]   // ↙ diagonal from top-right to bottom-left
+  ];
+}
+
+  function canPlace(word, row, col, dx, dy) {
+  for (let i = 0; i < word.length; i++) {
+    const x = row + dx * i;
+    const y = col + dy * i;
+    if (x < 0 || y < 0 || x >= gridRows || y >= gridCols) return false;
+    const cellChar = grid[x][y];
+    const wordChar = word[i]; // Already uppercase from .toUpperCase()
+    if (cellChar !== "" && cellChar !== wordChar) return false; // ✅ Allow overlap only if same letter
+  }
+  return true;
+}
+
+  function placeWord(word) {
+  const allDirections = directions();
+  const options = [];
+
+  // First pass: overlap-aware smart placement
+  for (let row = 0; row < gridRows; row++) {
+  for (let col = 0; col < gridCols; col++) {
+
+      for (const [dx, dy] of allDirections) {
+        if (canPlace(word, row, col, dx, dy)) {
+          let overlap = 0;
+          for (let i = 0; i < word.length; i++) {
+            const x = row + dx * i;
+            const y = col + dy * i;
+            if (grid[x][y] === word[i]) overlap++;
+          }
+          options.push({ row, col, dx, dy, overlap });
+        }
+      }
+    }
+  }
+
+  // Sort to place words with the most overlap first
+  options.sort((a, b) => b.overlap - a.overlap);
+
+  // Place using best option
+  if (options.length > 0) {
+    const { row, col, dx, dy } = options[0];
+    for (let i = 0; i < word.length; i++) {
+      const x = row + dx * i;
+      const y = col + dy * i;
+      grid[x][y] = word[i];
+    }
+    return;
+  }
+
+  // Absolute fallback: try every direction and every cell (no randomness)
+  for (let row = 0; row < gridRows; row++) {
+    for (let col = 0; col < gridCols; col++) {
+      for (const [dx, dy] of allDirections) {
+        if (canPlace(word, row, col, dx, dy)) {
+          for (let i = 0; i < word.length; i++) {
+            const x = row + dx * i;
+            const y = col + dy * i;
+            grid[x][y] = word[i];
+          }
+          return;
+        }
+      }
+    }
+  }
+
+  // Still not placed? Extremely rare. Log clearly.
+  console.warn(`🚨 Could not place word: ${word}`);
+  const li = document.getElementById(word.toLowerCase());
+  if (li) li.style.color = "red";
+}
+
+function placeAllWords() {
+  createEmptyGrid();
+  // Sort words by length (longest first improves chances)
+  const sortedWords = [...words].sort((a, b) => b.length - a.length);
+  const success = tryPlaceWords(sortedWords, 0);
+  if (!success) {
+    alert("❌ Could not place all words. This should rarely happen.");
+  }
+}
+
+function tryPlaceWords(wordList, index) {
+  if (index >= wordList.length) return true; // ✅ All words placed
+  const word = wordList[index].toUpperCase();
+  const positions = [];
+
+  for (let row = 0; row < gridRows; row++) {
+    for (let col = 0; col < gridCols; col++) {
+      for (const [dx, dy] of directions()) {
+        if (canPlace(word, row, col, dx, dy)) {
+          positions.push({ row, col, dx, dy });
+        }
+      }
+    }
+  }
+
+  // Optional shuffle for variety (preserves seed-based randomness)
+  for (let i = positions.length - 1; i > 0; i--) {
+    const j = Math.floor(seededRandom() * (i + 1));
+    [positions[i], positions[j]] = [positions[j], positions[i]];
+  }
+
+  for (const pos of positions) {
+    const placedCells = [];
+
+    for (let i = 0; i < word.length; i++) {
+      const x = pos.row + pos.dx * i;
+      const y = pos.col + pos.dy * i;
+      placedCells.push({ x, y, prev: grid[x][y] });
+      grid[x][y] = word[i];
+    }
+
+    if (tryPlaceWords(wordList, index + 1)) return true;
+
+    // ❌ Backtrack
+    for (const cell of placedCells) {
+      grid[cell.x][cell.y] = cell.prev;
+    }
+  }
+
+  return false;
+}
+
+
+
+  // Sort: prioritize highest overlap first for efficient use of space
+  function buildGridUI() {
+  gridElement.innerHTML = "";
+  cells = [];
+
+  // 🔧 Set dynamic grid dimensions
+
+
+  for (let row = 0; row < gridRows; row++) {
+    for (let col = 0; col < gridCols; col++) {
+      const cell = document.createElement("div");
+      cell.classList.add("cell");
+      cell.textContent = grid[row][col];
+      cell.dataset.row = row;
+      cell.dataset.col = col;
+
+      cell.addEventListener("mousedown", handleStart);
+      cell.addEventListener("touchstart", handleStart, { passive: false });
+
+      cell.addEventListener("mouseenter", handleMove);
+      cell.addEventListener("touchmove", handleMove, { passive: false });
+
+      cell.addEventListener("mouseup", handleEnd);
+      cell.addEventListener("touchend", handleEnd);
+
+      gridElement.appendChild(cell);
+      cells.push(cell);
+    }
+  }
+
+  document.addEventListener("mouseup", () => {
+    isMouseDown = false;
+  });
+}
+
+function handleStart(e) {
+  e.preventDefault();
+  isMouseDown = true;
+  resetSelection();
+
+  const cell = e.target;
+  startCell = cell;
+  cell.classList.add("selected");
+  selectedCells = [cell];
+}
+
+function handleMove(e) {
+  if (!isMouseDown || !startCell) return;
+
+  const touch = e.touches ? e.touches[0] : null;
+  const target = touch
+    ? document.elementFromPoint(touch.clientX, touch.clientY)
+    : e.target;
+
+  if (!target || !target.classList.contains("cell")) return;
+
+  const startRow = parseInt(startCell.dataset.row);
+  const startCol = parseInt(startCell.dataset.col);
+  const currentRow = parseInt(target.dataset.row);
+  const currentCol = parseInt(target.dataset.col);
+
+  const dx = currentRow - startRow;
+  const dy = currentCol - startCol;
+
+  const length = Math.max(Math.abs(dx), Math.abs(dy));
+  if (length === 0) return;
+
+  const normDx = dx / length;
+  const normDy = dy / length;
+
+  if (!Number.isInteger(normDx) || !Number.isInteger(normDy)) return;
+
+  const path = [];
+
+  for (let i = 0; i <= length; i++) {
+    const row = startRow + normDx * i;
+    const col = startCol + normDy * i;
+
+    const cellInPath = cells.find(
+      c => parseInt(c.dataset.row) === row && parseInt(c.dataset.col) === col
+    );
+
+    if (!cellInPath) return;
+
+    path.push(cellInPath);
+  }
+
+  // ✅ Reset previous selection and apply new one (even if it includes `.found` cells)
+  selectedCells.forEach(c => c.classList.remove("selected"));
+  selectedCells = path;
+  selectedCells.forEach(c => {
+    if (!c.classList.contains("found")) {
+      c.classList.add("selected");
+    }
+  });
+}
+
+
+function handleEnd(e) {
+  isMouseDown = false;
+  checkWord();
+}
+
+    function populateWordList() {
+      wordListElement.innerHTML = "";
+      words.forEach(word => {
+        const li = document.createElement("li");
+        li.textContent = word;
+        li.id = word.toLowerCase();
+        wordListElement.appendChild(li);
+      });
+    }
+
+function resetSelection() {
+  selectedCells.forEach(cell => {
+    if (!cell.classList.contains("found")) {
+      cell.classList.remove("selected");
+    }
+  });
+  selectedCells = [];
+}
+
+
+  function checkWord() {
+  const selectedWord = selectedCells.map(c => c.textContent).join("");
+  const reversed = selectedWord.split("").reverse().join("");
+  const match = words.find(word =>
+  word.toLowerCase() === selectedWord.toLowerCase()
+);
+
+
+  if (match) {
+    const color = wordColors[match.toLowerCase()] || "#4caf50";
+
+    selectedCells.forEach(c => {
+      c.classList.remove("selected");
+      c.classList.add("found");
+
+      // ✅ Store overlapping words using data attribute
+      const existing = c.dataset.words ? c.dataset.words.split(",") : [];
+      if (!existing.includes(match)) {
+        existing.push(match);
+        c.dataset.words = existing.join(",");
+      }
+
+      // ✅ Set color (you could make this fancier if you want)
+      c.style.backgroundColor = color;
+      c.style.color = "white";
+    });
+
+    // ✅ Strike through the word in the list
+    document.getElementById(match.toLowerCase()).classList.add("found");
+
+    // ✅ Play success sound
+    const sound = document.getElementById("successSound");
+    if (sound) {
+      sound.play().catch(err => {
+        console.warn("Sound play blocked until user interacts:", err);
+      });
+    }
+
+    // ✅ Check for completion
+    const allFound = words.every(word =>
+      document.getElementById(word.toLowerCase()).classList.contains("found")
+    );
+    if (allFound) confetti();
+
+  } else {
+    // Revert if not matched
+    setTimeout(() => resetSelection(), 300);
+  }
+}
+
+
+  function revealWord() {
+  const unfound = words.filter(w => !document.getElementById(w.toLowerCase()).classList.contains("found"));
+  if (unfound.length === 0) return;
+
+  const word = unfound[0].toUpperCase();
+
+  // Find the word in the grid
+  for (const [dx, dy] of directions()) {
+    for (let row = 0; row < gridRows; row++) {
+      for (let col = 0; col < gridCols; col++) {
+        let match = true;
+        const path = [];
+
+        for (let i = 0; i < word.length; i++) {
+          const x = row + dx * i;
+          const y = col + dy * i;
+          if (
+            x < 0 || y < 0 || x >= gridRows || y >= gridCols ||
+            grid[x][y] !== word[i]
+          ) {
+            match = false;
+            break;
+          }
+          const cell = cells.find(c => parseInt(c.dataset.row) === x && parseInt(c.dataset.col) === y);
+          if (cell) path.push(cell);
+        }
+
+        if (match) {
+          path.forEach(c => {
+            c.classList.add("found");
+            c.style.backgroundColor = "#4caf50"; // default green
+            c.style.color = "white";
+          });
+          document.getElementById(word.toLowerCase()).classList.add("found");
+          return;
+        }
+      }
+    }
+  }
+}
+
+
+function canReveal(word, row, col, dx, dy) {
+  for (let i = 0; i < word.length; i++) {
+    const x = row + dx * i;
+    const y = col + dy * i;
+    if (x < 0 || y < 0 || x >= gridRows || y >= gridCols) return false;
+    if (grid[x][y] !== word[i]) return false;
+  }
+  return true;
+}
+
+function startGame(wordList) {
+  words = wordList.map(w => w.toUpperCase());
+  assignColors(words);
+  createEmptyGrid();
+  placeAllWords();
+  fillGridRandomly();
+  buildGridUI();
+  populateWordList();
+}
+
+
+
+fetch("config.json")
+  .then(res => {
+    if (!res.ok) throw new Error("Config load failed!");
+    return res.json();
+  })
+  .then(config => {
+  const words = config.words;
+  gridRows = config.rows;
+  gridCols = config.cols;
+  const gridStyle = document.querySelector(".grid").style;
+  gridStyle.gridTemplateColumns = `repeat(${gridCols}, 1fr)`;
+  gridStyle.gridTemplateRows = `repeat(${gridRows}, 1fr)`;
+
+  startGame(words);
+})
+
+  .catch(err => {
+    console.error("❌ Failed to load puzzle configuration:", err);
+    alert("Could not load puzzle settings. See console.");
+  });
+
+
+  </script>
+  <audio id="successSound" preload="auto">
+  <source src="https://assets.mixkit.co/sfx/preview/mixkit-achievement-bell-600.mp3" type="audio/mpeg">
+</audio>
+
+</body>
+</html>

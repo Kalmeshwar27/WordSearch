@@ -1,0 +1,24 @@
+{
+  "name": "wordsearch",
+  "version": "1.0.0",
+  "description": "WordSearch Game",
+  "main": "index.html",
+  "scripts": {
+    "test": "python -m\"http.server\"",
+    "dev": "vite",
+    "build": "vite build"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Kalmeshwar27/WordSearch.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Kalmeshwar27/WordSearch/issues"
+  },
+  "homepage": "https://github.com/Kalmeshwar27/WordSearch#readme",
+  "dependencies": {
+    "vite": "^7.0.4"
+  }
+}

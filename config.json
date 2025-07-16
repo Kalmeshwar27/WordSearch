@@ -1,9 +1,11 @@
 {
-  "rows": 12,
-  "cols": 12,
+  "rows": 13,
+  "cols": 13,
   "words": [
-    "Downer", "Downfall", "Download", "Downsize", "Downstream",
-    "Downtown", "Downwind", "Upbeat", "Upbraid", "Update",
-    "Upgrade", "Upkeep", "Uplift", "Upright", "Uproar", "Upset"
-  ]
+"Athletic", "Bold", "Brave", "Brawny", "Burly", "Gallant", 
+"Hardy", "Hearty", "Hefty", "Hulky", "Macho", "Manly", "Masculine", 
+"Muscular", "Noble", "Powerful", "Robust", "Rugged", "Spunky", "Stable",
+"Stout", "Sturdy", "Tough", "Vigorous", "Thick", "Valiant"
+
+]
 }

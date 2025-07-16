@@ -54,8 +54,9 @@ h1 {
   display: grid;
   gap: 1px;
   padding: 8px;
-  border: 2px solid var(--grid-border);
-  background: white;
+  border: 1px solid var(--grid-border);
+  border-color: #000000;
+  background: rgb(255, 255, 255);
   border-radius: 10px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   touch-action: none;
@@ -64,14 +65,16 @@ h1 {
   aspect-ratio: 1 / 1;
   grid-template-columns: repeat(12, 1fr);
   grid-template-rows: repeat(12, 1fr);
+  perspective: 1000px;
+  transform-style: preserve-3d;
+  
 }
 
 .cell {
   background-color: #fff;
   border-radius: 4px;
   border: 1px solid #ddd;
-  font-size: clamp(10px, 2.8vw, 18px);
-  font-weight: bold;
+  font-size: clamp(8px, 2.3vw, 18px);
   color: #333;
   display: flex;
   justify-content: center;
@@ -80,19 +83,36 @@ h1 {
   transition: background-color 0.2s ease, transform 0.1s ease;
   user-select: none;
   aspect-ratio: 1 / 1;
+  box-shadow: #000000 0 0 8px;
+  transform-style: preserve-3d;
+  box-shadow:
+    inset 0 -2px 0 rgba(0, 0, 0, 0.15),
+    0 4px 6px rgba(0, 0, 0, 0.2),
+    0 1px 2px rgba(0, 0, 0, 0.1);
+  
 }
 
 .cell:hover {
-  background-color: #e0f7fa;
-  transform: scale(1.05);
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: 
+     inset 0 -2px 0 rgba(0, 0, 0, 0.1),
+     0 6px 10px rgba(0, 0, 0, 0.25);
+     
 }
 
 .cell.selected {
   background-color: #ffeb3b;
+  box-shadow:
+    inset 0 0 3px rgba(0, 0, 0, 0.2),
+    0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .cell.found {
   font-weight: bold;
+  transform: scale(1.02);
+  box-shadow:
+    inset 0 0 6px rgba(0, 0, 0, 0.3),
+    0 2px 6px rgba(0, 0, 0, 0.3);
 }
 
 .word-list {
@@ -164,7 +184,9 @@ h1 {
     flex-direction: column;
     align-items: center;
   }
-
+  .cell {
+    font-size: clamp(10px, 4.5vw, 14px);
+  }
   .word-list {
     width: 95vw;
     max-height: 250px;
@@ -179,61 +201,30 @@ h1 {
     font-size: 6vw;
   }
 }
-
-
-
-
 </style>
 
 </head>
 <body>
   <h1>Word Search Superheroes</h1>
   <div class="container">
-    <div class="grid" id="grid"></div>
-    <ul class="word-list" id="wordList"></ul>
+  <div class="grid" id="grid"></div>
+  <ul class="word-list" id="wordList"></ul>
   </div>
   <div class="controls">
-    <!-- <button onclick="resetSelection()">Revert</button> -->
-    <button onclick="revealWord()">Reveal Word</button>
+  <!-- <button onclick="resetSelection()">Revert</button> -->
+  <button onclick="revealWord()">Reveal Word</button>
   </div>
 
   <script>
   const wordColors = {};
-  const colorPalette = [
-  "#4caf50", "#f44336", "#2196f3", "#9c27b0", "#ff9800",
-  "#00bcd4", "#e91e63", "#3f51b5", "#009688", "#795548",
-  "#ff5722", "#673ab7", "#607d8b", "#8bc34a", "#cddc39", "#ffc107",
-  "#00acc1", "#8e24aa", "#c62828", "#1e88e5"
-];
-
-
-function assignColors(words) {
-  let colorIndex = 0;
-  words.forEach(word => {
-    const key = word.toLowerCase();
-    if (!wordColors[key]) {
-      wordColors[key] = colorPalette[colorIndex % colorPalette.length];
-      colorIndex++;
-    }
-  });
-}
-
-
   let seed = new Date().toDateString().split("").reduce((a, c) => a + c.charCodeAt(0), 0);
   function seededRandom() {
   const x = Math.sin(seed++) * 10000;
   return x - Math.floor(x);
   }
-   
-
     let words = [];
     let gridRows = 12;
     let gridCols = 12;
-
-
-   
-
-
     const gridElement = document.getElementById("grid");
     const wordListElement = document.getElementById("wordList");
     let grid = [];
@@ -246,12 +237,29 @@ function assignColors(words) {
   function createEmptyGrid() {
   grid = Array.from({ length: gridRows }, () => Array(gridCols).fill(""));
 }
-
-
+function assignColors(words) {
+  const usedColors = new Set();
+  words.forEach(word => {
+    const key = word.toLowerCase();
+    if (!wordColors[key]) {
+      let color;
+      let attempts = 0;
+      do {
+        const hue = Math.floor(seededRandom() * 360);  // hue: 0 to 359
+        const sat = 60 + Math.floor(seededRandom() * 30);  // saturation: 60–90%
+        const light = 50 + Math.floor(seededRandom() * 20); // lightness: 50–70%
+        color = `hsl(${hue}, ${sat}%, ${light}%)`;
+        attempts++;
+      } while (usedColors.has(color) && attempts < 10);
+      usedColors.add(color);
+      wordColors[key] = color;
+    }
+  });
+}
     function fillGridRandomly() {
       const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
       for (let row = 0; row < gridRows; row++) {
-       for (let col = 0; col < gridCols; col++) {
+      for (let col = 0; col < gridCols; col++) {
           if (grid[row][col] === "") {
             grid[row][col] = letters[Math.floor(seededRandom() * letters.length)];
           }
@@ -259,34 +267,28 @@ function assignColors(words) {
       }
     }
 
-    function directions() {
+  function directions() {
   return [
-    [0, 1],   // → left to right
-    [1, 0],   // ↓ top to bottom
-    [1, 1],   // ↘ diagonal from top-left to bottom-right
-    [1, -1]   // ↙ diagonal from top-right to bottom-left
+  [0, 1],   // → left to right
+  [1, 0],   // ↓ top to bottom
+  [1, 1],   // ↘ diagonal from top-left to bottom-right
+  [1, -1]   // ↙ diagonal from top-right to bottom-left
   ];
 }
-
 
   function canPlace(word, row, col, dx, dy) {
   for (let i = 0; i < word.length; i++) {
     const x = row + dx * i;
     const y = col + dy * i;
     if (x < 0 || y < 0 || x >= gridRows || y >= gridCols) return false;
-
-
     const cellChar = grid[x][y];
     const wordChar = word[i]; // Already uppercase from .toUpperCase()
-
     if (cellChar !== "" && cellChar !== wordChar) return false; // ✅ Allow overlap only if same letter
   }
   return true;
 }
 
-
-
-   function placeWord(word) {
+  function placeWord(word) {
   const allDirections = directions();
   const options = [];
 
@@ -346,12 +348,9 @@ function assignColors(words) {
 
 function placeAllWords() {
   createEmptyGrid();
-
   // Sort words by length (longest first improves chances)
   const sortedWords = [...words].sort((a, b) => b.length - a.length);
-
   const success = tryPlaceWords(sortedWords, 0);
-
   if (!success) {
     alert("❌ Could not place all words. This should rarely happen.");
   }
@@ -359,7 +358,6 @@ function placeAllWords() {
 
 function tryPlaceWords(wordList, index) {
   if (index >= wordList.length) return true; // ✅ All words placed
-
   const word = wordList[index].toUpperCase();
   const positions = [];
 
@@ -403,9 +401,7 @@ function tryPlaceWords(wordList, index) {
 
 
   // Sort: prioritize highest overlap first for efficient use of space
-
-
-    function buildGridUI() {
+  function buildGridUI() {
   gridElement.innerHTML = "";
   cells = [];
 
@@ -517,7 +513,7 @@ function handleEnd(e) {
       });
     }
 
- function resetSelection() {
+function resetSelection() {
   selectedCells.forEach(cell => {
     if (!cell.classList.contains("found")) {
       cell.classList.remove("selected");
