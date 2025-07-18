@@ -210,7 +210,7 @@ h1 {
 .controls button {
   padding: 10px 20px;
   font-size: clamp(14px, 4vw, 18px);
-  background-color: var(--primary-color);
+  background-color: #4c68af;
   color: white;
   border: none;
   border-radius: 8px;
@@ -286,6 +286,9 @@ h1 {
   <div class="controls">
   <!-- <button onclick="resetSelection()">Revert</button> -->
   <button onclick="revealWord()">Reveal Word</button>
+  <button onclick="revealAllWords()">Reveal All</button>
+  <!-- <button onclick="undoRevealAll()">Undo Reveal All</button> -->
+
   </div>
 
 
@@ -298,6 +301,7 @@ h1 {
   }
 
     let score = 0;
+   let revealedAllWords = false;
 
     let words = [];
     let gridRows = 12;
@@ -713,6 +717,81 @@ function resetSelection() {
   }
 
   alert("Couldn't find the word in the grid.");
+}
+
+function revealAllWords() {
+  words.forEach(word => {
+    const upperWord = word.toUpperCase();
+
+    for (const [dx, dy] of directions()) {
+      for (let row = 0; row < gridRows; row++) {
+        for (let col = 0; col < gridCols; col++) {
+          let match = true;
+          const path = [];
+
+          for (let i = 0; i < upperWord.length; i++) {
+            const x = row + dx * i;
+            const y = col + dy * i;
+            if (
+              x < 0 || y < 0 || x >= gridRows || y >= gridCols ||
+              grid[x][y] !== upperWord[i]
+            ) {
+              match = false;
+              break;
+            }
+            const cell = cells.find(c =>
+              parseInt(c.dataset.row) === x && parseInt(c.dataset.col) === y
+            );
+            if (cell) path.push(cell);
+          }
+
+          if (match) {
+            path.forEach(cell => {
+              cell.classList.add("found");
+              cell.style.backgroundColor = "#4caf50"; // Green
+              cell.style.color = "white";
+              cell.dataset.revealed = "true"; // ✅ Mark as revealed artificially
+            });
+            const li = document.getElementById(word.toLowerCase());
+            if (li) li.classList.add("found");
+            break;
+          }
+        }
+      }
+    }
+  });
+
+  score = words.length * 5;
+  document.getElementById("score").textContent = score;
+  revealedAllWords = true; // ✅ Set flag
+}
+function undoRevealAll() {
+  if (!revealedAllWords) {
+    alert("Nothing to undo.");
+    return;
+  }
+
+  // Revert revealed cells
+  cells.forEach(cell => {
+    if (cell.dataset.revealed === "true") {
+      cell.classList.remove("found");
+      cell.style.backgroundColor = "";
+      cell.style.color = "#333";
+      delete cell.dataset.revealed;
+    }
+  });
+
+  // Revert word list
+  words.forEach(word => {
+    const li = document.getElementById(word.toLowerCase());
+    if (li && li.classList.contains("found")) {
+      li.classList.remove("found");
+    }
+  });
+
+  score = 0;
+  document.getElementById("score").textContent = score;
+  revealedAllWords = false;
 }
 
 
